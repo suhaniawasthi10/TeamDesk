@@ -16,7 +16,19 @@
     },
     "backend": {
       "type": "object",
-      "properties": {"replicas": {"type": "integer", "minimum": 2}}
+      "properties": {
+        "replicas": {"type": "integer", "minimum": 2},
+        "autoscaling": {
+          "type": "object",
+          "required": ["enabled", "minReplicas", "maxReplicas", "targetCPUUtilizationPercentage"],
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "minReplicas": {"type": "integer", "minimum": 2, "maximum": 4},
+            "maxReplicas": {"type": "integer", "minimum": 2, "maximum": 4},
+            "targetCPUUtilizationPercentage": {"type": "integer", "minimum": 1, "maximum": 100}
+          }
+        }
+      }
     },
     "frontend": {
       "type": "object",

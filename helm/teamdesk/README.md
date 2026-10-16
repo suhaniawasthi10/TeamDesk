@@ -47,8 +47,10 @@ Each Helm revision creates one migration Job. It waits for PostgreSQL, runs
 Alembic head before starting the API; two replicas do not race to migrate the
 same schema. Completed migration Jobs are removed automatically after two minutes.
 
-The frontend and backend each have two replicas, readiness checks and CPU/memory
-requests and limits. Their Services are ClusterIP. The `alb` Ingress sends `/api`
+The frontend has two replicas; the backend's HPA maintains two to four replicas
+based on CPU usage. Install Metrics Server as described in the
+[autoscaling guide](../../k8s/autoscaling.md). Both deployments have readiness
+checks and CPU/memory requests and limits. Their Services are ClusterIP. The `alb` Ingress sends `/api`
 to the backend and `/` to the frontend; Nginx also proxies API documentation,
 health checks and metrics. The controller creates one internet-facing ALB in the
 two public subnets, targeting pod IPs in the private subnets.

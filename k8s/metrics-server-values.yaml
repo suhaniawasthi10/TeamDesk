@@ -1,0 +1,11 @@
+# Official metrics-server chart 3.14.0 / server v0.9.0.
+replicas: 1
+tls:
+  type: helm
+apiService:
+  insecureSkipTLSVerify: false
+args:
+  - --kubelet-certificate-authority=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+resources:
+  requests: {cpu: 100m, memory: 128Mi}
+  limits: {cpu: 300m, memory: 256Mi}

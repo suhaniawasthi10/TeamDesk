@@ -150,7 +150,11 @@ Temporary demo address, available while the AWS stack is running: [TeamDesk on E
 
 Prometheus and Grafana are installed in the `monitoring` namespace. Both backend replicas are scraped successfully, and the provisioned TeamDesk dashboard queries real request counts, rates, latency and errors. See the [monitoring guide](monitoring/README.md) for installation, private browser access and cleanup.
 
-Automatic CI deployment, autoscaling and troubleshooting demonstrations, the final demo and AWS teardown are still pending.
+Automatic deployment is verified in [run 38905178753](https://github.com/suhaniawasthi10/TeamDesk-/actions/runs/38905178753): all four jobs passed, and both deployments plus the live `/health` version matched commit `1814bc1e583053e285a710e3924ab375a4f6b86b`. Employee records were preserved and Prometheus discovered both replacement backend pods.
+
+The backend also has a CPU-based HPA with two to four replicas. Metrics Server supplies CPU measurements; a bounded read-only load test verified scale-up to four ready replicas. Setup and reproduction commands are in the [autoscaling guide](k8s/autoscaling.md).
+
+Troubleshooting demonstrations, the final demo and AWS teardown are still pending.
 
 ## Local cleanup
 
