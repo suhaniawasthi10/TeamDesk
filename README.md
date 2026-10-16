@@ -117,7 +117,18 @@ The [TeamDesk CI workflow](.github/workflows/ci.yml) runs on pushes and pull req
 - **Backend tests:** Python 3.13, pinned dependencies, Ruff lint/format checks, and `pytest -v` against a disposable PostgreSQL 17 service. The fixture applies Alembic migrations before running the tests.
 - **Frontend build:** Node 24, `npm ci`, formatting checks, and the Vite production build.
 
-Any failing command fails its job. Actions are pinned to verified commit SHAs, and the workflow has read-only repository access. Image scanning and publishing are the next pipeline stage.
+Any failing command fails its job. Actions are pinned to verified commit SHAs. The first validation-only run passed: [run 38880453299](https://github.com/suhaniawasthi10/TeamDesk-/actions/runs/38880453299).
+
+After both checks pass, the image job builds the backend and frontend for the Linux runner. Trivy scans their operating-system and application packages. Any HIGH or CRITICAL finding, including one without an available fix, fails the job. Both scans must pass before either image is pushed; pull requests build and scan without publishing.
+
+Pushes to `main` publish these images using the full Git commit SHA:
+
+```text
+ghcr.io/suhaniawasthi10/teamdesk-backend:<commit-sha>
+ghcr.io/suhaniawasthi10/teamdesk-frontend:<commit-sha>
+```
+
+The image job uses GitHub's automatic `GITHUB_TOKEN` with `packages: write`; no personal access token is required in repository secrets. OCI source/revision labels connect the images to this repository and their commit. After the first publication, set both packages to public in their GitHub package settings so the cluster and instructor can pull them without registry credentials.
 
 ## Implementation status
 

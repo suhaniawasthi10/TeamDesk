@@ -77,3 +77,73 @@ jobs:
         run: npm run format:check
       - name: Build frontend
         run: npm run build
+
+  images:
+    name: Build, scan and publish images
+    needs: [backend, frontend]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Set image names
+        env:
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+        run: |
+          echo "BACKEND_IMAGE=ghcr.io/${REPOSITORY_OWNER,,}/teamdesk-backend:$GITHUB_SHA" >> "$GITHUB_ENV"
+          echo "FRONTEND_IMAGE=ghcr.io/${REPOSITORY_OWNER,,}/teamdesk-frontend:$GITHUB_SHA" >> "$GITHUB_ENV"
+      - name: Build both images
+        id: build
+        run: |
+          docker build --pull \
+            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --tag "$BACKEND_IMAGE" backend
+          docker build --pull \
+            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --tag "$FRONTEND_IMAGE" frontend
+      - name: Scan backend with Trivy
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.76.0
+          image-ref: ${{ env.BACKEND_IMAGE }}
+          scanners: vuln
+          vuln-type: os,library
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: 'false'
+          exit-code: '1'
+          timeout: 10m
+      - name: Scan frontend with Trivy
+        # Still report frontend findings when the backend scan fails.
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.76.0
+          image-ref: ${{ env.FRONTEND_IMAGE }}
+          scanners: vuln
+          vuln-type: os,library
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: 'false'
+          exit-code: '1'
+          timeout: 10m
+      - name: Log in to GHCR
+        if: ${{ success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - name: Publish scanned images
+        if: ${{ success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+        run: |
+          docker push "$BACKEND_IMAGE"
+          docker push "$FRONTEND_IMAGE"
+          printf '### Published images\n\n- `%s`\n- `%s`\n' "$BACKEND_IMAGE" "$FRONTEND_IMAGE" >> "$GITHUB_STEP_SUMMARY"
+      - name: Log out of GHCR
+        if: ${{ always() }}
+        run: docker logout ghcr.io
