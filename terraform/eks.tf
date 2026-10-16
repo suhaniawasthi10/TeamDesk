@@ -108,10 +108,6 @@ resource "aws_launch_template" "nodes" {
     http_put_response_hop_limit = 2
   }
 
-  credit_specification {
-    cpu_credits = "standard"
-  }
-
   tag_specifications {
     resource_type = "instance"
     tags = {

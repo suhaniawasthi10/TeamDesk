@@ -138,9 +138,9 @@ Trivy checks the operating-system and application packages in both final contain
 
 ## Implementation status
 
-AWS infrastructure configuration and operating instructions are in [terraform/](terraform/README.md). Review its plan and credit-usage estimate before provisioning.
+AWS infrastructure configuration, credit-usage estimates and cleanup instructions are in [terraform/](terraform/README.md). Terraform has provisioned the Sydney VPC, EKS 1.35 cluster and two private c7i-flex.large workers; both nodes are Ready and a follow-up plan reports no changes. The worker type was selected from the account’s Free-plan-eligible EC2 types.
 
-Backend, migrations, tests, frontend, and the full Docker Compose stack are verified locally. Both application containers run as non-root users. GitHub Actions passes tests, builds the frontend and both images, scans both images, and publishes SHA-tagged images to public GHCR packages. AWS, Kubernetes deployment, monitoring dashboards, and the final demo are still pending.
+Backend, migrations, tests, frontend, and the full Docker Compose stack are verified locally. Both application containers run as non-root users. GitHub Actions passes tests, builds the frontend and both images, scans both images, and publishes SHA-tagged images to public GHCR packages. The Helm application deployment, monitoring dashboards, final demo and AWS teardown are still pending.
 
 ## Local cleanup
 

@@ -8,7 +8,7 @@ Terraform creates the AWS foundation. Helm will install the application and moni
 - Two public subnets for the NAT gateway and application load balancer, and two private subnets for EKS workers.
 - An internet gateway, route tables, one NAT gateway and its Elastic IP.
 - An EKS 1.35 control plane, currently in standard support, with API, audit and authentication logs retained for one day.
-- One managed node group with two on-demand `t3.medium` workers: 4 vCPUs and 8 GiB memory total. Each has an encrypted 20 GiB gp3 root disk, no SSH key, and requires IMDSv2. T3 CPU credits use standard mode to avoid surplus-credit charges.
+- One managed node group with two on-demand `c7i-flex.large` workers: 4 vCPUs and 8 GiB memory total. Each has an encrypted 20 GiB gp3 root disk, no SSH key, and requires IMDSv2. These instance types were returned as Free plan eligible by the EC2 API; `t3.medium` was rejected during the first worker launch.
 - Separate cluster and worker IAM roles, plus an EKS administrator access entry for the operator's stable IAM role.
 
 Workers have no public IPs. Their image downloads leave through NAT. One NAT gateway is a deliberate short-lived capstone cost tradeoff: it is a single point of failure and traffic from the other availability zone can incur cross-zone transfer charges. Production deployments would usually use one NAT per availability zone.
@@ -49,7 +49,7 @@ The following USD list prices were checked on 16 October 2026 for Sydney using t
 | Resource | Approximate rate |
 | --- | ---: |
 | EKS in standard support | $0.10/hour |
-| Two t3.medium workers | $0.1056/hour combined |
+| Two c7i-flex.large workers | $0.22144/hour combined |
 | One NAT gateway | $0.059/hour plus $0.059/GB processed |
 | NAT public IPv4 address | $0.005/hour |
 | Worker gp3 disks, 40 GiB total | $3.84/month, prorated |
@@ -57,7 +57,7 @@ The following USD list prices were checked on 16 October 2026 for Sydney using t
 | Two load-balancer public IPv4 addresses | $0.01/hour |
 | Later PostgreSQL/monitoring gp3 storage | $0.096/GB-month |
 
-The deployed stack's fixed baseline is approximately $0.31–$0.32/hour. For a brief, low-traffic demonstration, allow roughly $0.35–$0.50/hour ($2.80–$4 for eight hours), including a small allowance for downloads, logs and load-balancer capacity. This is an estimate, not a spending cap; traffic, storage, runtime and service eligibility affect the bill. The Free plan's displayed $100 balance is not permission to upgrade to a Paid plan. If a service is blocked, review the restriction before changing plans.
+The deployed stack's fixed baseline is approximately $0.42–$0.44/hour. For a brief, low-traffic demonstration, allow roughly $0.45–$0.65/hour ($3.60–$5.20 for eight hours), including a small allowance for downloads, logs and load-balancer capacity. This is an estimate, not a spending cap; traffic, storage, runtime and service eligibility affect the bill. The Free plan's displayed $100 balance is not permission to upgrade to a Paid plan. If a service is blocked, review the restriction before changing plans.
 
 Sources: [EKS pricing](https://aws.amazon.com/eks/pricing/), [VPC pricing](https://aws.amazon.com/vpc/pricing/), [EC2 pricing](https://aws.amazon.com/ec2/pricing/on-demand/), [EBS pricing](https://aws.amazon.com/ebs/pricing/), [load balancer pricing](https://aws.amazon.com/elasticloadbalancing/pricing/).
 
@@ -67,9 +67,13 @@ Applying starts billable usage, consuming applicable credits. Use the reviewed s
 
 ```sh
 terraform -chdir=terraform apply teamdesk.tfplan
-aws eks update-kubeconfig --profile teamdesk --region ap-southeast-2 --name teamdesk
+mkdir -p .local
+export KUBECONFIG="$PWD/.local/kubeconfig"
+aws eks update-kubeconfig --profile teamdesk --region ap-southeast-2 --name teamdesk --alias teamdesk
 kubectl get nodes
 ```
+
+The project-local kubeconfig is ignored and leaves other Kubernetes contexts untouched. If Terraform reports a DNS lookup failure on macOS while system lookups work, retry the command with `GODEBUG=netdns=cgo` to select the system resolver. Regenerate and review a plan if Terraform reports that a saved plan is stale.
 
 Capture the VPC and EKS cluster in the AWS Console with the region visible. This phase must actually finish before it counts as deployed infrastructure. The `terraform output` values identify the resources to capture.
 

@@ -46,9 +46,9 @@ variable "kubernetes_version" {
 }
 
 variable "node_instance_type" {
-  description = "Two t3.medium nodes provide 4 vCPUs and 8 GiB total for the app and monitoring."
+  description = "Two c7i-flex.large nodes provide 4 vCPUs and 8 GiB total; verify Free plan eligibility in the chosen region."
   type        = string
-  default     = "t3.medium"
+  default     = "c7i-flex.large"
 }
 
 variable "api_allowed_cidrs" {
