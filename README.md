@@ -44,7 +44,24 @@ The setup script generates a local password in the ignored `.env` file and prese
 
 Emails are normalized to lowercase and unique. Invalid input returns 422, duplicate email returns 409, and missing employees return 404. API input rejects unexpected fields. Alembic owns schema changes; the API does not create tables during startup.
 
-## Testing and code quality
+## Local frontend development
+
+With the backend running on port 8000, open a second terminal:
+
+```sh
+cd frontend
+npm ci
+npm run dev
+```
+
+Open http://localhost:5173. Vite forwards `/api` requests to the local backend. The directory supports search, department filtering, sorting, pagination, and employee creation, editing, and removal. Fonts are served locally with the app.
+
+```sh
+npm run build
+npm run format:check
+```
+
+## Backend checks
 
 ```sh
 docker compose -f docker-compose.test.yml up -d --wait
@@ -62,7 +79,7 @@ For a running API, `.venv/bin/python scripts/smoke_backend.py` verifies real HTT
 
 ## Implementation status
 
-Backend, migration, local PostgreSQL, and automated tests are verified. Frontend, application images, CI/CD, AWS, Kubernetes, monitoring dashboards, and final demo are still pending. The current Compose file starts PostgreSQL only; the frontend and backend services will be added during containerization.
+Backend, migration, local PostgreSQL, automated tests, and the React frontend are working locally. Application images, CI/CD, AWS, Kubernetes, monitoring dashboards, and the final demo are still pending. The current Compose file starts PostgreSQL only; the frontend and backend services will be added during containerization.
 
 ## Local cleanup
 
