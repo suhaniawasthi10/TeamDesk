@@ -128,7 +128,9 @@ ghcr.io/suhaniawasthi10/teamdesk-backend:<commit-sha>
 ghcr.io/suhaniawasthi10/teamdesk-frontend:<commit-sha>
 ```
 
-The image job uses GitHub's automatic `GITHUB_TOKEN` with `packages: write`; no personal access token is required in repository secrets. OCI source/revision labels connect the images to this repository and their commit. After the first publication, set both packages to public in their GitHub package settings so the cluster and instructor can pull them without registry credentials.
+The image job uses GitHub's automatic `GITHUB_TOKEN` with `packages: write`; no personal access token is required in repository secrets. OCI source/revision labels connect the images to this repository and their commit. Both packages are public so the cluster and instructor can pull them without registry credentials.
+
+Verified release: [successful build, scan and publish run](https://github.com/suhaniawasthi10/TeamDesk-/actions/runs/38881564681), commit `77d9be21223999ed14a846f44c80b25b9df2ff89`. Published packages: [backend](https://github.com/users/suhaniawasthi10/packages/container/package/teamdesk-backend) and [frontend](https://github.com/users/suhaniawasthi10/packages/container/package/teamdesk-frontend).
 
 ### Security scan explanation
 
@@ -136,7 +138,7 @@ Trivy checks the operating-system and application packages in both final contain
 
 ## Implementation status
 
-Backend, migrations, tests, frontend, and the full Docker Compose stack are verified locally. Both application containers run as non-root users. HTTP CRUD through Nginx, readiness, metrics, and preservation of all three demo records across a full stop/start were verified. CI/CD, AWS, Kubernetes, monitoring dashboards, and the final demo are still pending.
+Backend, migrations, tests, frontend, and the full Docker Compose stack are verified locally. Both application containers run as non-root users. GitHub Actions passes tests, builds the frontend and both images, scans both images, and publishes SHA-tagged images to public GHCR packages. AWS, Kubernetes deployment, monitoring dashboards, and the final demo are still pending.
 
 ## Local cleanup
 
