@@ -15,7 +15,40 @@ Terraform → VPC + EKS + worker nodes
 FastAPI metrics → Prometheus → Grafana
 ```
 
-## Local backend development
+## Run with Docker Compose
+
+Start Docker Desktop, then run from the project root:
+
+```sh
+python3 scripts/setup_local.py
+docker compose up --build
+```
+
+Open **http://localhost:3000** for the directory or **http://localhost:3000/docs** for Swagger. To run in the background and wait for health checks, use `docker compose up --build -d --wait`.
+
+| Service | Container port | Local address | Runtime user |
+| --- | --- | --- | --- |
+| Frontend / Nginx | 8080 | `localhost:3000` | UID 101 |
+| FastAPI | 8000 | `localhost:8001` | UID 10001 |
+| PostgreSQL | 5432 | `localhost:5433` | PostgreSQL server user |
+
+The frontend uses a multistage Node build and a non-root Nginx runtime. Nginx serves the built site and proxies `/api` and API documentation to the backend. The backend image contains runtime dependencies and migration files. Base images are pinned by digest.
+
+Compose waits for PostgreSQL health, runs `alembic upgrade head` in the single local backend service, and waits for backend readiness before starting the frontend. The backend image itself starts only Uvicorn; cluster migrations will run separately to avoid concurrent migrations across replicas.
+
+The setup script generates a URL-safe database password in ignored `.env`. Preserve that password when reusing the database volume. The `teamdesk_postgres_data` volume retains records across ordinary stop/start operations. No real credentials are included in either image or the repository.
+
+Useful checks:
+
+```sh
+docker compose ps
+docker compose logs --tail=30 backend frontend
+docker compose exec backend id
+docker compose exec frontend id
+.venv/bin/python scripts/smoke_backend.py --url http://localhost:3000
+```
+
+## Run the backend without Docker
 
 Requires Python 3.13 and Docker Desktop. From the project root:
 
@@ -79,7 +112,7 @@ For a running API, `.venv/bin/python scripts/smoke_backend.py` verifies real HTT
 
 ## Implementation status
 
-Backend, migration, local PostgreSQL, automated tests, and the React frontend are working locally. Application images, CI/CD, AWS, Kubernetes, monitoring dashboards, and the final demo are still pending. The current Compose file starts PostgreSQL only; the frontend and backend services will be added during containerization.
+Backend, migrations, tests, frontend, and the full Docker Compose stack are verified locally. Both application containers run as non-root users. HTTP CRUD through Nginx, readiness, metrics, and preservation of all three demo records across a full stop/start were verified. CI/CD, AWS, Kubernetes, monitoring dashboards, and the final demo are still pending.
 
 ## Local cleanup
 
@@ -95,6 +128,8 @@ Ordinary stop/start preserves the application database. `docker compose down -v`
 - [FastAPI testing](https://fastapi.tiangolo.com/tutorial/testing/)
 - [SQLAlchemy session transactions](https://docs.sqlalchemy.org/en/20/orm/session_basics.html)
 - [Alembic migrations](https://alembic.sqlalchemy.org/en/latest/tutorial.html)
+- [Docker Compose startup order](https://docs.docker.com/compose/how-tos/startup-order/)
+- [Non-root Nginx image](https://github.com/nginx/docker-nginx-unprivileged)
 
 ## Repository
 

@@ -1,10 +1,15 @@
 """Verify a running API through real HTTP requests, leaving no sample record."""
 
+import argparse
 from uuid import uuid4
 
 import httpx
 
-with httpx.Client(base_url="http://127.0.0.1:8000", timeout=10) as client:
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--url", default="http://127.0.0.1:8000")
+args = parser.parse_args()
+
+with httpx.Client(base_url=args.url, timeout=10) as client:
     for path in ("/health", "/ready", "/docs", "/metrics"):
         response = client.get(path)
         response.raise_for_status()
