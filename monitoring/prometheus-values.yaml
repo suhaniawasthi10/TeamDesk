@@ -1,0 +1,41 @@
+# kube-prometheus-stack 92.9.0, sized for the two-node capstone cluster.
+defaultRules:
+  create: false
+alertmanager:
+  enabled: false
+# EKS manages these control-plane components outside the worker network.
+kubeEtcd:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+prometheusOperator:
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 256Mi}
+prometheus:
+  prometheusSpec:
+    retention: 6h
+    retentionSize: 3GB
+    scrapeInterval: 15s
+    evaluationInterval: 15s
+    resources:
+      requests: {cpu: 200m, memory: 512Mi}
+      limits: {cpu: 1000m, memory: 1536Mi}
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: teamdesk-gp3
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests:
+              storage: 5Gi
+kube-state-metrics:
+  resources:
+    requests: {cpu: 30m, memory: 64Mi}
+    limits: {cpu: 200m, memory: 128Mi}
+prometheus-node-exporter:
+  resources:
+    requests: {cpu: 20m, memory: 32Mi}
+    limits: {cpu: 200m, memory: 64Mi}

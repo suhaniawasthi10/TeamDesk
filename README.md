@@ -146,7 +146,9 @@ TeamDesk is also deployed through Helm on EKS: two backend replicas, two fronten
 
 Temporary demo address, available while the AWS stack is running: [TeamDesk on EKS](http://k8s-teamdesk-teamdesk-bc7c0edada-1116675340.ap-southeast-2.elb.amazonaws.com).
 
-Automatic CI deployment, monitoring dashboards, the final demo and AWS teardown are still pending.
+Prometheus and Grafana are installed in the `monitoring` namespace. Both backend replicas are scraped successfully, and the provisioned TeamDesk dashboard queries real request counts, rates, latency and errors. See the [monitoring guide](monitoring/README.md) for installation, private browser access and cleanup.
+
+Automatic CI deployment, autoscaling and troubleshooting demonstrations, the final demo and AWS teardown are still pending.
 
 ## Local cleanup
 
