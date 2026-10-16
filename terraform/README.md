@@ -10,12 +10,15 @@ Terraform creates the AWS foundation. Helm will install the application and moni
 - An EKS 1.35 control plane, currently in standard support, with API, audit and authentication logs retained for one day.
 - One managed node group with two on-demand `c7i-flex.large` workers: 4 vCPUs and 8 GiB memory total. Each has an encrypted 20 GiB gp3 root disk, no SSH key, and requires IMDSv2. These instance types were returned as Free plan eligible by the EC2 API; `t3.medium` was rejected during the first worker launch.
 - Separate cluster and worker IAM roles, plus an EKS administrator access entry for the operator's stable IAM role.
+- The Pod Identity agent and EBS CSI driver, pinned to versions compatible with EKS 1.35. Separate IAM roles are associated with the storage and load-balancer controller service accounts in `kube-system`.
 
 Workers have no public IPs. Their image downloads leave through NAT. One NAT gateway is a deliberate short-lived capstone cost tradeoff: it is a single point of failure and traffic from the other availability zone can incur cross-zone transfer charges. Production deployments would usually use one NAT per availability zone.
 
 The Kubernetes API is reachable publicly for local administration and GitHub-hosted runners; it still requires AWS authentication and an EKS access policy. Set `api_allowed_cidrs` to trusted networks when using fixed deployment runners. Application ports are exposed later through an Ingress load balancer, not through the control-plane API.
 
 The AWS provider is pinned and its dependency lockfile is committed. State stays local for this single-operator capstone; do not run Terraform concurrently or delete state before cleanup. A team should use a secured remote backend with locking.
+
+The load-balancer policy in `policies/` comes from the [upstream controller v3.6.0 policy](https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/v3.6.0/docs/install/iam_policy.json). Terraform additionally restricts security-group ingress edits to this VPC. The storage role uses AWS's `AmazonEBSCSIDriverPolicyV2`. These roles use short-lived Pod Identity credentials; no access keys are stored in Kubernetes. Install the controller and application using the [Helm deployment guide](../helm/teamdesk/README.md).
 
 ## Authentication and plan
 

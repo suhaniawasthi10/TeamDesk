@@ -34,7 +34,7 @@ Open **http://localhost:3000** for the directory or **http://localhost:3000/docs
 
 The frontend uses a multistage Node build and a non-root Nginx runtime. Nginx serves the built site and proxies `/api` and API documentation to the backend. The backend uses Python on Alpine with runtime dependencies and migration files; pip is removed after installation because the running API does not install packages. Base images are pinned by digest.
 
-Compose waits for PostgreSQL health, runs `alembic upgrade head` in the single local backend service, and waits for backend readiness before starting the frontend. The backend image itself starts only Uvicorn; cluster migrations will run separately to avoid concurrent migrations across replicas.
+Compose waits for PostgreSQL health, runs `alembic upgrade head` in the single local backend service, and waits for backend readiness before starting the frontend. The backend image itself starts only Uvicorn; Helm runs cluster migrations in a separate Job to avoid concurrent migrations across replicas.
 
 The setup script generates a URL-safe database password in ignored `.env`. Preserve that password when reusing the database volume. The `teamdesk_postgres_data` volume retains records across ordinary stop/start operations. No real credentials are included in either image or the repository.
 
@@ -140,7 +140,13 @@ Trivy checks the operating-system and application packages in both final contain
 
 AWS infrastructure configuration, credit-usage estimates and cleanup instructions are in [terraform/](terraform/README.md). Terraform has provisioned the Sydney VPC, EKS 1.35 cluster and two private c7i-flex.large workers; both nodes are Ready and a follow-up plan reports no changes. The worker type was selected from the account’s Free-plan-eligible EC2 types.
 
-Backend, migrations, tests, frontend, and the full Docker Compose stack are verified locally. Both application containers run as non-root users. GitHub Actions passes tests, builds the frontend and both images, scans both images, and publishes SHA-tagged images to public GHCR packages. The Helm application deployment, monitoring dashboards, final demo and AWS teardown are still pending.
+Backend, migrations, tests, frontend, and the full Docker Compose stack are verified locally. Both application containers run as non-root users. GitHub Actions passes tests, builds the frontend and both images, scans both images, and publishes SHA-tagged images to public GHCR packages.
+
+TeamDesk is also deployed through Helm on EKS: two backend replicas, two frontend replicas, ClusterIP Services and an ALB Ingress. PostgreSQL uses an encrypted gp3 persistent volume. Live CRUD, health, readiness, documentation and metrics checks pass through the load balancer. See the [deployment guide](helm/teamdesk/README.md) for setup, verification and cleanup.
+
+Temporary demo address, available while the AWS stack is running: [TeamDesk on EKS](http://k8s-teamdesk-teamdesk-bc7c0edada-1116675340.ap-southeast-2.elb.amazonaws.com).
+
+Automatic CI deployment, monitoring dashboards, the final demo and AWS teardown are still pending.
 
 ## Local cleanup
 

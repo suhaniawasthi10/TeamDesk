@@ -1,0 +1,18 @@
+# AWS Load Balancer Controller chart 3.6.0. Pass vpcId from Terraform outputs.
+clusterName: teamdesk
+region: ap-southeast-2
+replicaCount: 2
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+resources:
+  requests: {cpu: 100m, memory: 128Mi}
+  limits: {cpu: 500m, memory: 256Mi}
+enableShield: false
+enableWaf: false
+enableWafv2: false
+controllerConfig:
+  featureGates:
+    ALBGatewayAPI: false
+    NLBGatewayAPI: false
+    GatewayListenerSet: false

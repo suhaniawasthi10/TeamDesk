@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-migration-check
+  labels:
+    {{- include "teamdesk.labels" . | nindent 4 }}
+data:
+  wait_for_schema.py: |
+    {{- .Files.Get "files/wait_for_schema.py" | nindent 4 }}
+  migrate.py: |
+    {{- .Files.Get "files/migrate.py" | nindent 4 }}
+---
+# A regular Job starts alongside PostgreSQL on the first install. Backend init
+# containers wait for this image's Alembic head before starting the API.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-migrate-{{ .Release.Revision }}
+  labels:
+    {{- include "teamdesk.labels" . | nindent 4 }}
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 120
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: migrate
+          image: {{ include "teamdesk.backendImage" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["python", "/bootstrap/migrate.py"]
+          env:
+            - name: PYTHONPATH
+              value: /app
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret }}
+                  key: DATABASE_URL
+          volumeMounts:
+            - name: migration-check
+              mountPath: /bootstrap
+              readOnly: true
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+      volumes:
+        - name: migration-check
+          configMap:
+            name: {{ .Release.Name }}-migration-check

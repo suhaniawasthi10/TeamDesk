@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["image", "backend", "frontend", "database"],
+  "properties": {
+    "image": {
+      "type": "object",
+      "required": ["tag"],
+      "properties": {
+        "tag": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$",
+          "description": "Full Git commit SHA of images published by a successful pipeline."
+        }
+      }
+    },
+    "backend": {
+      "type": "object",
+      "properties": {"replicas": {"type": "integer", "minimum": 2}}
+    },
+    "frontend": {
+      "type": "object",
+      "properties": {"replicas": {"type": "integer", "minimum": 2}}
+    },
+    "database": {
+      "type": "object",
+      "required": ["existingSecret"],
+      "properties": {"existingSecret": {"type": "string", "minLength": 1}}
+    }
+  }
+}

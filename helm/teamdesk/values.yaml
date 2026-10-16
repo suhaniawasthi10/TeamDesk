@@ -1,0 +1,38 @@
+image:
+  backend: ghcr.io/suhaniawasthi10/teamdesk-backend
+  frontend: ghcr.io/suhaniawasthi10/teamdesk-frontend
+  tag: "77d9be21223999ed14a846f44c80b25b9df2ff89"
+  pullPolicy: IfNotPresent
+
+backend:
+  replicas: 2
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 256Mi}
+
+frontend:
+  replicas: 2
+  resources:
+    requests: {cpu: 50m, memory: 32Mi}
+    limits: {cpu: 250m, memory: 64Mi}
+
+database:
+  image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+  existingSecret: teamdesk-db
+  name: teamdesk
+  user: teamdesk
+  storageClass: teamdesk-gp3
+  storageSize: 5Gi
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+
+ingress:
+  enabled: true
+  className: alb
+  host: ""
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+    alb.ingress.kubernetes.io/tags: Project=teamdesk
