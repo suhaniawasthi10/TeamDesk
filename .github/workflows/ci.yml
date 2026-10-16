@@ -155,8 +155,6 @@ jobs:
     if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.DEPLOY_TO_EKS == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    env:
-      KUBECONFIG: ${{ runner.temp }}/teamdesk-kubeconfig
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -176,6 +174,8 @@ jobs:
           KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
         run: |
           test -n "$KUBE_CONFIG_DATA"
+          export KUBECONFIG="$RUNNER_TEMP/teamdesk-kubeconfig"
+          echo "KUBECONFIG=$KUBECONFIG" >> "$GITHUB_ENV"
           umask 077
           printf '%s' "$KUBE_CONFIG_DATA" | base64 --decode > "$KUBECONFIG"
           kubectl auth can-i patch deployments -n teamdesk
@@ -206,4 +206,4 @@ jobs:
           kubectl get events -n teamdesk --sort-by=.lastTimestamp
       - name: Remove runner credentials
         if: ${{ always() }}
-        run: rm -f "$KUBECONFIG"
+        run: rm -f "$RUNNER_TEMP/teamdesk-kubeconfig"
