@@ -1,0 +1,56 @@
+# Deliberately broken resources for an isolated troubleshooting exercise.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: teamdesk-troubleshooting
+  labels:
+    app.kubernetes.io/part-of: teamdesk-troubleshooting
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab-web
+  namespace: teamdesk-troubleshooting
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: lab-web}
+  template:
+    metadata:
+      labels: {app: lab-web}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: web
+          image: ghcr.io/suhaniawasthi10/teamdesk-backend:missing-demo-tag
+          # The exercise only needs Python; it never connects to the app database.
+          command: [python, -m, http.server, "8000", --directory, /tmp]
+          ports:
+            - {name: http, containerPort: 8000}
+          readinessProbe:
+            httpGet: {path: /, port: http}
+            periodSeconds: 3
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lab-web
+  namespace: teamdesk-troubleshooting
+spec:
+  type: ClusterIP
+  # Intentional typo: the pod label is app=lab-web.
+  selector: {app: lab-typo}
+  ports:
+    - {name: http, port: 8000, targetPort: http}

@@ -154,7 +154,9 @@ Automatic deployment is verified in [run 38905178753](https://github.com/suhania
 
 The backend also has a CPU-based HPA with two to four replicas. Metrics Server supplies CPU measurements; a bounded read-only load test verified scale-up to four ready replicas. Setup and reproduction commands are in the [autoscaling guide](k8s/autoscaling.md).
 
-Troubleshooting demonstrations, the final demo and AWS teardown are still pending.
+Two isolated [troubleshooting exercises](troubleshooting/README.md) reproduce and repair an image-pull failure and a Service selector mismatch. Both failure states and recovery were verified on EKS.
+
+The final presentation/demo, final submission audit and AWS teardown are still pending.
 
 ## Local cleanup
 
