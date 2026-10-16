@@ -1,4 +1,4 @@
-FROM python:3.13-slim-trixie@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f
+FROM python:3.13-alpine@sha256:2d9aefe2fef018a7eb2c13064c89c71929800fd2e5dccdbf52ea5da5bb8d929a
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -8,8 +8,9 @@ WORKDIR /app
 
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt \
-    && groupadd --gid 10001 teamdesk \
-    && useradd --uid 10001 --gid teamdesk --no-create-home --shell /usr/sbin/nologin teamdesk
+    && pip uninstall --yes pip \
+    && addgroup -g 10001 teamdesk \
+    && adduser -D -H -u 10001 -G teamdesk -s /sbin/nologin teamdesk
 
 COPY app ./app
 COPY alembic ./alembic

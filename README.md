@@ -32,7 +32,7 @@ Open **http://localhost:3000** for the directory or **http://localhost:3000/docs
 | FastAPI | 8000 | `localhost:8001` | UID 10001 |
 | PostgreSQL | 5432 | `localhost:5433` | PostgreSQL server user |
 
-The frontend uses a multistage Node build and a non-root Nginx runtime. Nginx serves the built site and proxies `/api` and API documentation to the backend. The backend image contains runtime dependencies and migration files. Base images are pinned by digest.
+The frontend uses a multistage Node build and a non-root Nginx runtime. Nginx serves the built site and proxies `/api` and API documentation to the backend. The backend uses Python on Alpine with runtime dependencies and migration files; pip is removed after installation because the running API does not install packages. Base images are pinned by digest.
 
 Compose waits for PostgreSQL health, runs `alembic upgrade head` in the single local backend service, and waits for backend readiness before starting the frontend. The backend image itself starts only Uvicorn; cluster migrations will run separately to avoid concurrent migrations across replicas.
 
@@ -129,6 +129,10 @@ ghcr.io/suhaniawasthi10/teamdesk-frontend:<commit-sha>
 ```
 
 The image job uses GitHub's automatic `GITHUB_TOKEN` with `packages: write`; no personal access token is required in repository secrets. OCI source/revision labels connect the images to this repository and their commit. After the first publication, set both packages to public in their GitHub package settings so the cluster and instructor can pull them without registry credentials.
+
+### Security scan explanation
+
+Trivy checks the operating-system and application packages in both final container images against its vulnerability database, and our pipeline blocks HIGH/CRITICAL findings. The original backend scan reported Debian package vulnerabilities and CVE-2025-47273 in bundled setuptools, a [path traversal flaw in package downloads](https://github.com/pypa/setuptools/security/advisories/GHSA-5rjg-fvgr-3xxf); switching to the smaller Alpine base and removing unnecessary pip tooling produced zero HIGH/CRITICAL findings in local rescans of both images. This result describes the packages and database at scan time, not a guarantee that the application has no security flaws.
 
 ## Implementation status
 
