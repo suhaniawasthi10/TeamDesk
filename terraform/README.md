@@ -1,6 +1,6 @@
 # TeamDesk infrastructure
 
-Terraform creates the AWS foundation. Helm will install the application and monitoring after the cluster is available.
+Terraform creates the AWS foundation. Helm installs the application and monitoring after the cluster is available.
 
 ## Resources
 
@@ -92,3 +92,9 @@ terraform -chdir=terraform apply destroy.tfplan
 ```
 
 Capture the successful `Destroy complete!` output as `evidence/M7-destroy.png`. Check for leftover project load balancers, EBS volumes, NAT gateways and Elastic IPs. Keep local state until cleanup is confirmed. Stopping the application or closing the terminal does not stop EKS/NAT charges.
+
+### Verified cleanup
+
+The TeamDesk deployment was removed on 16 October 2026. Application and monitoring removal deleted the ALB, its target groups and the three data volumes before the controllers were removed. Terraform deleted the 37 managed resources. The initial run removed 36 resources but encountered a DNS lookup failure when deleting the CloudWatch log group; a refreshed destroy plan removed that final resource successfully.
+
+The final AWS audit found no remaining TeamDesk EKS cluster, active workers, worker Auto Scaling group, load balancer, target groups, EBS volumes or snapshots, NAT gateway, Elastic IP, VPC, subnets, route tables, network interfaces, security groups, project IAM roles/policy or CloudWatch log group. The five recorded EBS disks included both worker root volumes. Terraform state contains no managed resources. GitHub's deployment variable is disabled and its temporary cluster credential has been removed.

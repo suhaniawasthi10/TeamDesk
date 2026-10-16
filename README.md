@@ -140,15 +140,15 @@ Trivy checks the operating-system and application packages in both final contain
 
 ## Implementation status
 
-AWS infrastructure configuration, credit-usage estimates and cleanup instructions are in [terraform/](terraform/README.md). Terraform has provisioned the Sydney VPC, EKS 1.35 cluster and two private c7i-flex.large workers; both nodes are Ready and a follow-up plan reports no changes. The worker type was selected from the account’s Free-plan-eligible EC2 types.
+AWS infrastructure configuration, credit-usage estimates and cleanup instructions are in [terraform/](terraform/README.md). Terraform provisioned the Sydney VPC, EKS 1.35 cluster and two private c7i-flex.large workers; both nodes were Ready and a follow-up plan reported no changes. The worker type was selected from the account’s Free-plan-eligible EC2 types.
 
 Backend, migrations, tests, frontend, and the full Docker Compose stack are verified locally. Both application containers run as non-root users. GitHub Actions passes tests, builds the frontend and both images, scans both images, and publishes SHA-tagged images to public GHCR packages.
 
-TeamDesk is also deployed through Helm on EKS: two backend replicas, two frontend replicas, ClusterIP Services and an ALB Ingress. PostgreSQL uses an encrypted gp3 persistent volume. Live CRUD, health, readiness, documentation and metrics checks pass through the load balancer. See the [deployment guide](helm/teamdesk/README.md) for setup, verification and cleanup.
+TeamDesk was deployed through Helm on EKS with two backend replicas, two frontend replicas, ClusterIP Services and an ALB Ingress. PostgreSQL used an encrypted gp3 persistent volume. Live CRUD, health, readiness, documentation and metrics checks passed through the load balancer. See the [deployment guide](helm/teamdesk/README.md) for setup, verification and cleanup.
 
-Temporary demo address, available while the AWS stack is running: [TeamDesk on EKS](http://k8s-teamdesk-teamdesk-bc7c0edada-1116675340.ap-southeast-2.elb.amazonaws.com).
+The AWS demonstration ran on 16 October 2026. The infrastructure has since been removed, so its former load-balancer address is no longer available. The application still runs locally with Docker Compose, and the Helm chart and Terraform configuration can recreate the cloud deployment.
 
-Prometheus and Grafana are installed in the `monitoring` namespace. Both backend replicas are scraped successfully, and the provisioned TeamDesk dashboard queries real request counts, rates, latency and errors. See the [monitoring guide](monitoring/README.md) for installation, private browser access and cleanup.
+Prometheus and Grafana ran in the `monitoring` namespace. Both backend replicas were scraped successfully, and the provisioned TeamDesk dashboard displayed real request counts, rates, latency and errors. See the [monitoring guide](monitoring/README.md) for installation, private browser access and cleanup.
 
 Automatic deployment is verified in [run 38905178753](https://github.com/suhaniawasthi10/TeamDesk-/actions/runs/38905178753): all four jobs passed, and both deployments plus the live `/health` version matched commit `1814bc1e583053e285a710e3924ab375a4f6b86b`. Employee records were preserved and Prometheus discovered both replacement backend pods.
 
@@ -156,7 +156,9 @@ The backend also has a CPU-based HPA with two to four replicas. Metrics Server s
 
 Two isolated [troubleshooting exercises](troubleshooting/README.md) reproduce and repair an image-pull failure and a Service selector mismatch. Both failure states and recovery were verified on EKS.
 
-The final presentation/demo, final submission audit and AWS teardown are still pending.
+The [capstone presentation](presentation/TeamDesk-Capstone.pptx) covers the application, delivery pipeline, infrastructure and operational demonstrations.
+
+AWS cleanup was verified on 16 October 2026. Monitoring and the application were uninstalled while their controllers could remove the load balancer and persistent disks. Terraform removed the 37 managed resources; a transient DNS error required retrying the final CloudWatch log-group deletion. A subsequent AWS audit found no remaining project compute, storage, networking, IAM or log resources, and Terraform state is empty. Automatic EKS deployment is disabled and its temporary GitHub credential has been deleted. CI still runs tests, builds, scans and publishes images.
 
 ## Local cleanup
 
@@ -183,4 +185,4 @@ The local SSH remote uses the `github-personal` alias to select the personal Git
 
 ## Evidence
 
-Required submission screenshots will go in `evidence/`. Temporary verification logs stay in the ignored `.local/checks/` folder.
+Submission screenshots are in `evidence/`. Temporary verification logs and local backups stay in the ignored `.local/` folder.
