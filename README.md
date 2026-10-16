@@ -110,7 +110,7 @@ The 20 cases cover employee CRUD, validation, duplicate email creation/update, m
 
 For a running API, `.venv/bin/python scripts/smoke_backend.py` verifies real HTTP CRUD and removes its synthetic record afterward.
 
-## Continuous integration
+## Continuous integration and deployment
 
 The [TeamDesk CI workflow](.github/workflows/ci.yml) runs on pushes and pull requests to `main`, with a manual run option. Two jobs check the application:
 
@@ -131,6 +131,8 @@ ghcr.io/suhaniawasthi10/teamdesk-frontend:<commit-sha>
 The image job uses GitHub's automatic `GITHUB_TOKEN` with `packages: write`; no personal access token is required in repository secrets. OCI source/revision labels connect the images to this repository and their commit. Both packages are public so the cluster and instructor can pull them without registry credentials.
 
 Verified release: [successful build, scan and publish run](https://github.com/suhaniawasthi10/TeamDesk-/actions/runs/38881564681), commit `77d9be21223999ed14a846f44c80b25b9df2ff89`. Published packages: [backend](https://github.com/users/suhaniawasthi10/packages/container/package/teamdesk-backend) and [frontend](https://github.com/users/suhaniawasthi10/packages/container/package/teamdesk-frontend).
+
+When the repository variable `DEPLOY_TO_EKS` is `true`, a fourth job deploys the scanned commit images through Helm. It waits for migrations and both application rollouts, then checks the live application version, database readiness and frontend through the Ingress. Deployment uses an encrypted, eight-hour Kubernetes credential scoped to the `teamdesk` namespace; the AWS account policy blocks creation of the preferred OIDC provider. See [deployment access](k8s/deployment.md) for setup, renewal and revocation. Disable this job before tearing down the cluster.
 
 ### Security scan explanation
 

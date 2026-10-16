@@ -1,4 +1,4 @@
-name: TeamDesk CI
+name: TeamDesk CI/CD
 
 on:
   push:
@@ -12,7 +12,8 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Finish main deployments; cancellation can leave a Helm release pending.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   backend:
@@ -147,3 +148,62 @@ jobs:
       - name: Log out of GHCR
         if: ${{ always() }}
         run: docker logout ghcr.io
+
+  deploy:
+    name: Deploy to EKS
+    needs: images
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.DEPLOY_TO_EKS == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      KUBECONFIG: ${{ runner.temp }}/teamdesk-kubeconfig
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install pinned deployment tools
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl -fsSLo kubectl https://dl.k8s.io/release/v1.35.8/bin/linux/amd64/kubectl
+          echo '874d5e72dbb819f43cff16bcd1e4f8bac5b7f2361fe1e55049b0a6c676fb0cbf  kubectl' | sha256sum --check
+          sudo install -m 0755 kubectl /usr/local/bin/kubectl
+          curl -fsSLO https://get.helm.sh/helm-v4.3.0-linux-amd64.tar.gz
+          echo '86584a54def73570558f66f5111cc53dfed56689637ae32c1201205d494f54fb  helm-v4.3.0-linux-amd64.tar.gz' | sha256sum --check
+          tar -xzf helm-v4.3.0-linux-amd64.tar.gz
+          sudo install -m 0755 linux-amd64/helm /usr/local/bin/helm
+      - name: Configure namespace-scoped cluster access
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+        run: |
+          test -n "$KUBE_CONFIG_DATA"
+          umask 077
+          printf '%s' "$KUBE_CONFIG_DATA" | base64 --decode > "$KUBECONFIG"
+          kubectl auth can-i patch deployments -n teamdesk
+      - name: Deploy scanned commit images
+        run: |
+          helm lint helm/teamdesk --set-string image.tag="$GITHUB_SHA"
+          helm upgrade --install teamdesk helm/teamdesk --namespace teamdesk \
+            --set-string image.tag="$GITHUB_SHA" \
+            --wait --wait-for-jobs --rollback-on-failure --timeout 8m --history-max 5
+          kubectl rollout status deployment/teamdesk-backend -n teamdesk --timeout=120s
+          kubectl rollout status deployment/teamdesk-frontend -n teamdesk --timeout=120s
+      - name: Verify deployed release
+        env:
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+        run: |
+          for component in backend frontend; do
+            deployed=$(kubectl get deployment "teamdesk-$component" -n teamdesk -o jsonpath='{.spec.template.spec.containers[0].image}')
+            test "$deployed" = "ghcr.io/${REPOSITORY_OWNER,,}/teamdesk-$component:$GITHUB_SHA"
+          done
+          address=$(kubectl get ingress teamdesk -n teamdesk -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          test -n "$address"
+          python3 scripts/verify_deployment.py --url "http://$address" --sha "$GITHUB_SHA"
+          printf '### Deployment verified\n\nCommit: `%s`\n\n[Open TeamDesk](http://%s)\n' "$GITHUB_SHA" "$address" >> "$GITHUB_STEP_SUMMARY"
+      - name: Show rollout diagnostics
+        if: ${{ failure() }}
+        run: |
+          kubectl get pods,deployments,jobs -n teamdesk
+          kubectl get events -n teamdesk --sort-by=.lastTimestamp
+      - name: Remove runner credentials
+        if: ${{ always() }}
+        run: rm -f "$KUBECONFIG"
