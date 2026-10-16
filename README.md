@@ -110,6 +110,15 @@ The 20 cases cover employee CRUD, validation, duplicate email creation/update, m
 
 For a running API, `.venv/bin/python scripts/smoke_backend.py` verifies real HTTP CRUD and removes its synthetic record afterward.
 
+## Continuous integration
+
+The [TeamDesk CI workflow](.github/workflows/ci.yml) runs on pushes and pull requests to `main`, with a manual run option. Two jobs check the application:
+
+- **Backend tests:** Python 3.13, pinned dependencies, Ruff lint/format checks, and `pytest -v` against a disposable PostgreSQL 17 service. The fixture applies Alembic migrations before running the tests.
+- **Frontend build:** Node 24, `npm ci`, formatting checks, and the Vite production build.
+
+Any failing command fails its job. Actions are pinned to verified commit SHAs, and the workflow has read-only repository access. Image scanning and publishing are the next pipeline stage.
+
 ## Implementation status
 
 Backend, migrations, tests, frontend, and the full Docker Compose stack are verified locally. Both application containers run as non-root users. HTTP CRUD through Nginx, readiness, metrics, and preservation of all three demo records across a full stop/start were verified. CI/CD, AWS, Kubernetes, monitoring dashboards, and the final demo are still pending.
