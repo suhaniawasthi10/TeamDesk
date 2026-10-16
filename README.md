@@ -138,6 +138,8 @@ Trivy checks the operating-system and application packages in both final contain
 
 ## Implementation status
 
+AWS infrastructure configuration and operating instructions are in [terraform/](terraform/README.md). Review its plan and credit-usage estimate before provisioning.
+
 Backend, migrations, tests, frontend, and the full Docker Compose stack are verified locally. Both application containers run as non-root users. GitHub Actions passes tests, builds the frontend and both images, scans both images, and publishes SHA-tagged images to public GHCR packages. AWS, Kubernetes deployment, monitoring dashboards, and the final demo are still pending.
 
 ## Local cleanup
